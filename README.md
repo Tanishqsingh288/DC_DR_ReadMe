@@ -116,4 +116,4 @@ Our chosen strategy is **Multi-Site (Active-Passive)**:
 5. Documentation & Handover – 2-3 days.
 
 ## 12. High level Diagram
-![My Photo](images/myphoto.png)
+![Diagram](2025_10_03_0ff_Kleki(1).png)
