@@ -1,122 +1,116 @@
-# Disaster Recovery (DR) & Site Reliability Plan
+# Business Continuity and Disaster Recovery (BCP/DR) Plan
 
-## 1. What Are We Doing?  
+## 1. Introduction
+This document outlines the Business Continuity and Disaster Recovery (BCP/DR) plan for our company’s production cloud infrastructure.  
+The primary goal is to ensure **service availability, resilience, and data protection** for our business-critical Cloud Management Portal (CMP).  
+The plan addresses **both common recurring failures** (such as instance crashes or network latency) and **catastrophic failures** (such as full regional outages or ransomware).  
 
-We are implementing a **comprehensive Disaster Recovery (DR) and Site Reliability Engineering (SRE) plan** to ensure that our company’s cloud infrastructure, web applications, and critical data remain **highly available and resilient** in the face of failures. This plan addresses both **common, recurring failures** (e.g., EC2 instance crashes, storage errors, network latency issues, misconfigured services) and **one-time, catastrophic failures** (e.g., full regional outages, natural disasters, ransomware attacks).  
-
-The strategy includes **redundant infrastructure deployment, automated backups, replication, failover mechanisms, and continuous monitoring**. For multi-cloud readiness, workloads can be replicated to an alternative cloud provider (e.g., Azure or GCP) to maintain business continuity even if one cloud region experiences a total outage.  
-
-**Key focus areas include:**  
-- **High Availability:** Distribute services across multiple Availability Zones (AZs) and optionally multiple cloud regions.  
-- **Data Protection:** Implement automated database snapshots, S3 Cross-Region Replication (CRR), and versioned storage.  
-- **Automation & Failover:** Use Terraform and Python (Boto3) scripts to automate provisioning, failover, and recovery procedures.  
-- **Monitoring & Alerting:** Employ AWS CloudWatch, CloudTrail, and SNS alerts for rapid detection and response.  
-- **Testing & Validation:** Simulate both common failures and catastrophic failures to verify readiness.  
-- **Security & Compliance:** Encryption, access controls, auditing, and compliance checks.  
-- **Cost Optimization:** Tiered redundancy for critical and non-critical workloads.  
-
-This plan **future-proofs operations**, maintains **customer trust**, ensures **regulatory compliance**, and reduces **downtime and data loss risks** for both everyday and catastrophic failures.  
+This BCP/DR plan leverages AWS services with a **multi-site (Active-Passive)** disaster recovery strategy, supported by automation, monitoring, and cost-optimized resilience.  
 
 ---
 
-## 2. Why Are We Doing This?  
+## 2. Objectives
 
-- **Ensure Service Availability:** Minimize downtime caused by routine and catastrophic failures.  
-- **Protect Critical Data:** Safeguard sensitive customer and business data.  
-- **Minimize Downtime Costs:** Maintain revenue, customer trust, and brand reputation.  
-- **Regulatory Compliance:** Meet legal and industry standards.  
-- **Future-Proof Multi-Cloud Readiness:** Prepare for seamless failover across clouds.  
-- **Rapid Recovery:** Ensure lost data can be restored quickly, reducing business disruption.  
+### 2.1 Data Center (DC) Objectives
+- Maintain high availability of application services across multiple Availability Zones (AZs).  
+- Eliminate single points of failure in compute, networking, and database layers.  
+- Provide secure, redundant storage for critical business and customer data.  
+- Ensure reliable backup and restore mechanisms within the primary data center.  
+- Optimize operational costs while retaining resiliency.  
 
----
-
-## 3. Business Impact  
-
-- **Revenue Loss:** Downtime directly affects transactions and service delivery.  
-- **Customer Trust:** Prolonged outages can erode confidence and loyalty.  
-- **Operational Delays:** Critical workflows may halt, affecting internal and external processes.  
-- **Compliance Violations:** Data loss or insufficient recovery measures can result in legal penalties.  
-- **Reputation Damage:** Frequent or severe failures impact brand credibility.  
+### 2.2 Disaster Recovery (DR) Objectives
+- Ensure continuity of services in case of full region outage or catastrophic event.  
+- Provide an alternate site (DR Region) with the ability to take over traffic seamlessly.  
+- Minimize Recovery Time Objective (RTO) and Recovery Point Objective (RPO) for critical workloads.  
+- Replicate backups and databases across regions to ensure data durability.  
+- Regularly test failover and recovery procedures to validate effectiveness.  
 
 ---
 
-## 4. Objectives  
-
-### 4.1 DC (Data Continuity) Objectives  
-1. Maintain high availability for all critical services.  
-2. Ensure automated backups and replication are in place.  
-3. Minimize single points of failure in the infrastructure.  
-4. Monitor workloads to detect and mitigate common issues proactively.  
-5. Ensure security and compliance for all continuously running services.  
-
-### 4.2 DR (Disaster Recovery) Objectives  
-1. Enable rapid recovery from catastrophic failures.  
-2. Replicate critical workloads across AZs, regions, and optionally clouds.  
-3. Automate failover and restoration processes.  
-4. Validate readiness through regular testing of extreme failure scenarios.  
-5. Minimize business disruption and data loss during major incidents.  
+## 3. Scope
+This plan covers:  
+- The **Cloud Management Portal (CMP)** web application and APIs.  
+- Application servers (EC2/VMs) across AWS Availability Zones.  
+- Primary Database (Multi-AZ) and its backups.  
+- Storage (S3, cross-region replication).  
+- DNS and traffic management (Route 53, Load Balancers).  
+- Security, monitoring, and alerting mechanisms.  
 
 ---
 
-## 5. Requirements Before Starting  
+## 4. Risk Assessment
 
-- Complete info of existing and upcoming workloads, databases, and dependencies , infrastructure, network topology, and storage architecture.  
-- Access to AWS accounts and permissions for automation.  
-- Backup policies and data retention requirements.  
-- Budget allocation for DR implementation.  
-- Regulatory and compliance obligations.  
-- Multi-cloud setup readiness (optional but recommended).  
+### Common Risks at Production Level
+1. **Availability Zone (AZ) failure** → Can cause downtime for single-AZ workloads.  
+2. **Regional outage** → Natural disaster or AWS service failure affecting an entire region.  
+3. **Database corruption** → Logical or accidental data deletion.  
+4. **Ransomware or malware attack** → Data encryption or loss of access.  
+5. **Network misconfiguration** → Incorrect security group, VPC, or routing changes leading to outages.  
+6. **DDoS attack** → High traffic surge impacting availability.  
+7. **Hardware/instance failure** → EC2 or VM crashes leading to downtime.  
 
----
-
-## 6. Stack To Be Used  
-
-- **AWS Services:** EC2, RDS/Aurora, S3, Lambda, CloudWatch, CloudTrail, Route 53, DataSync, Step Functions, etc.  
-- **Automation & IaC:** Python (Boto3), Terraform.  
-- **Optional Multi-Cloud:** Azure VMs, Azure Blob Storage, GCP Compute Engine & Cloud Storage.  
+These risks must be mitigated through **multi-AZ deployment, multi-site replication, automated backups, monitoring, and proactive security measures**.  
 
 ---
 
-## 7. Available Services  
-
-- AWS Backup, CloudFormation, S3 CRR, Aurora Replicas, EC2 Auto Scaling, CloudWatch, CloudTrail, Lambda, Step Functions, Route 53 DNS failover.  
-
----
-
-## 8. Security Aspect  
-
-- IAM roles with least privilege principle for automation scripts.  
-- Encryption in transit and at rest for all data.  
-- Network security: VPC security groups and ACLs.  
-- Logging and auditing via CloudTrail and Config.  
-- Compliance checks for regulatory requirements.  
+## 5. Cloud Architecture for DR & Continuity
+- **Primary Region (DC):** Active site serving production traffic with multi-AZ redundancy.  
+- **Secondary Region (DR):** Passive site ready to take over in case of regional failure.  
+- **Route 53 DNS:** Manages global traffic routing and failover between DC and DR.  
+- **Application Layer:** EC2/VMs deployed across 3 AZs per region, behind a load balancer.  
+- **Database Layer:** Primary DB with synchronous replication (multi-AZ) and cross-region replication for DR.  
+- **Backup Layer:** Automated snapshots and versioned backups in S3, with cross-region replication.  
 
 ---
 
-## 9. Cost Optimization  
-
-- Critical workloads: fully redundant multi-AZ/multi-region or multi-cloud.  
-- Non-critical workloads: cost-efficient single-region backups and snapshots.  
-- S3 lifecycle policies to move older backups to Glacier.  
-- Auto-scaling and spot instances for non-critical workloads.  
-
-Optional multi-cloud: replicate S3 and RDS data to Azure or GCP for disaster recovery.  
+## 6. Recovery Objectives
+- **Recovery Time Objective (RTO):** ≤ 30 minutes for critical services.  
+- **Recovery Point Objective (RPO):** ≤ 15 minutes for databases, ≤ 1 hour for backups.  
 
 ---
 
-## 10. Estimated Time to Build  
+## 7. Disaster Recovery Strategies
+Our chosen strategy is **Multi-Site (Active-Passive)**:  
+- **Primary Site:** Actively serves traffic under normal operations.  
+- **DR Site:** Kept warm and ready to take over in the event of a disaster.  
+- **Traffic Routing:** Route 53 automatically fails over to the DR site if the primary region fails.  
+- **Data Replication:** Database and backups are replicated across regions using Multi-AZ + Cross-Region Replication.  
+- **Validation:** Regular failover drills will be conducted to ensure recovery effectiveness.  
 
-- **Working Hours:** 5 hrs/day  
-- **Deadline:** 1 month (~20 working days)  
+---
+
+## 8. Security & Compliance
+- **IAM Policies:** Enforce least-privilege access for automation and users.  
+- **Encryption:** Encrypt all data at rest and in transit (KMS, TLS).  
+- **Monitoring:** CloudWatch, GuardDuty, and CloudTrail for threat detection and auditing.  
+- **Network Security:** Security groups, NACLs, and WAF for traffic control and DDoS mitigation.  
+- **Compliance:** Adherence to applicable regulations (e.g., GDPR, ISO 27001).  
+
+---
+
+## 9. Testing & Validation
+- **Simulation of Failures:** Test single-instance failures, AZ outages, and full region failover.  
+- **Backup Recovery Tests:** Validate database restore from snapshots and versioned S3 storage.  
+- **DR Drills:** Quarterly failover test to DR region to ensure readiness.  
+
+---
+
+
+## 10. Cost Optimization
+- Multi-AZ for critical workloads, single-AZ backups for non-critical.  
+- Use S3 lifecycle policies to shift older backups to Glacier.  
+- Keep DR Region in **warm standby mode** to reduce cost.  
+- Use auto-scaling and spot instances for non-critical environments.  
+
+---
+
+## 11. Estimated Timeframe
+- **Working hours:** 5 hrs/day.  
+- **Deadline:** 1 month (~20 working days).  
 
 **Phases:**  
-1. Requirements & Architecture: 3-4 days  
-2. Terraform & Python Automation: 10-12 days  
-3. Infrastructure Setup & DR Implementation: 5-6 days  
-4. Testing & Validation: 3-4 days  
-5. Documentation & Handover: 2-3 days  
-
----
-
-## 11. High-Level Diagram  
-
+1. Requirements & Architecture – 3-4 days.  
+2. Terraform & Python Automation – 10-12 days.  
+3. Infra Setup & DR Implementation – 5-6 days.  
+4. Testing & Validation – 3-4 days.  
+5. Documentation & Handover – 2-3 days.  
