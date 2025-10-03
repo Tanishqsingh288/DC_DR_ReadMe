@@ -113,4 +113,7 @@ Our chosen strategy is **Multi-Site (Active-Passive)**:
 2. Terraform & Python Automation – 10-12 days.  
 3. Infra Setup & DR Implementation – 5-6 days.  
 4. Testing & Validation – 3-4 days.  
-5. Documentation & Handover – 2-3 days.  
+5. Documentation & Handover – 2-3 days.
+
+## 12. High level Diagram
+![My Photo](images/myphoto.png)
