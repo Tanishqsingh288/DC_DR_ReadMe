@@ -1,77 +1,96 @@
-# BCP/DR Quick Vulnerability List — Cloud Management Portal
+# High-Level DC/DR Plan – Risk & Improvement Review
 
-**Date:** 2025-10-03
-
-For each item below: **Where is the problem**, **How it can be exploited / fail**, **How to resolve it**.
+**Date:** 2025-10-03  
+**Note:** This is a *conceptual / high-level design plan* for the CMP Disaster Recovery setup.  
+The points below highlight **where risks exist in the proposed design**, **how they could impact real-world implementation**, and **what refinements are recommended** before moving to detailed build.
 
 ---
 
 ## 1. Route 53 DNS Failover
-**Where:** Route 53 health checks / DNS TTL settings (failover records).  
-**How exploited / fail:** Misconfigured health checks or long TTLs cause slow or no DNS failover; clients keep resolving to the failed primary.  
-**Resolve:** Use low TTL (60–120s), configure robust health checks (ALB `/healthz`), add CloudWatch alarms + automation (Lambda) to update routing, consider Global Accelerator or CloudFront origin-failover for faster network-level switching.
+- **Where:** DNS-based failover with Route 53.  
+- **Risk:** DNS TTLs and health-check misconfigurations may delay failover.  
+- **Impact:** Failover might not meet RTO (≤30 min).  
+- **Refinement:** Document TTL values and health-check endpoints now; consider adding Global Accelerator in detailed design.
 
 ---
 
 ## 2. Warm-Standby Ambiguity
-**Where:** DR region resource state (unclear hot/warm/cold definitions).  
-**How exploited / fail:** If DR is cold or under-provisioned, automated spin-up exceeds RTO; autoscaling not pre-warmed under load.  
-**Resolve:** Classify workloads (Critical → Hot/Warm; Non-critical → Cold); document per-workload DR mode; pre-bake AMIs/launch templates; automate provisioning with Terraform/CloudFormation and test warm capacity regularly.
+- **Where:** DR region design (shown as passive site).  
+- **Risk:** Unclear if DR is cold, warm, or hot → uncertainty in cost vs RTO tradeoff.  
+- **Impact:** Could fail to meet stated recovery objectives in practice.  
+- **Refinement:** In detailed plan, classify workloads as Critical / High / Low and define per-mode (hot/warm/cold).
 
 ---
 
 ## 3. Database Replication Lag
-**Where:** Cross-region DB replication (async) with no lag monitoring.  
-**How exploited / fail:** High write volume or replication issues cause lag > RPO; logical corruption can replicate to DR.  
-**Resolve:** Use appropriate tech (Aurora Global DB or properly monitored read-replicas), enable CloudWatch replica-lag alarms, enable PITR and delayed/immutable snapshots, test recovery and measure actual RPO.
+- **Where:** Cross-region DB replication.  
+- **Risk:** Async replication may exceed 15 min RPO.  
+- **Impact:** Possible data loss during DR switch.  
+- **Refinement:** Evaluate Aurora Global DB vs standard RDS replication; add lag monitoring and alerting in detailed plan.
 
 ---
 
-## 4. Backup Hardening Gaps
-**Where:** S3 backup buckets (no versioning / no object lock / weak KMS policies).  
-**How exploited / fail:** Ransomware or accidental deletion removes backups; weak KMS allows unauthorized overwrite/decrypt.  
-**Resolve:** Enable S3 Versioning, enable Object Lock (for new buckets) or create immutable buckets, use dedicated KMS CMKs with strict key policies, enable CRR for versioned objects, and test restoration.
+## 4. Backup Hardening
+- **Where:** S3 cross-region replication.  
+- **Risk:** Without versioning/immutability, backups could be deleted or corrupted.  
+- **Impact:** Loss of recovery data.  
+- **Refinement:** Plan for S3 Versioning + Object Lock + KMS upfront, so bucket design supports it from day one.
 
 ---
 
-## 5. Direct Admin SSH/RDP from Internet
-**Where:** Admin access path (SSH/RDP open to Internet).  
-**How exploited / fail:** Brute-force, credential theft, or lateral movement leading to full compromise, malicious changes, or backup deletion.  
-**Resolve:** Remove direct Internet access; use SSM Session Manager or VPN + bastion with restricted source IPs; enforce MFA, JIT access, and session logging via CloudTrail/CloudWatch.
+## 5. Direct Admin Access
+- **Where:** Diagram shows Internet-based SSH/RDP.  
+- **Risk:** Insecure if directly exposed.  
+- **Impact:** Potential breach or misuse during DR.  
+- **Refinement:** Replace with SSM Session Manager or VPN+bastion in the final detailed plan.
 
 ---
 
-## 6. Ephemeral / Local Application State
-**Where:** EC2 local disks or instance-local session state not centralized.  
-**How exploited / fail:** Instance failures or region failover lose local state (uploads, sessions, temp files), causing app errors and data loss.  
-**Resolve:** Move shared/ephemeral state to S3/EFS/managed DB; use ElastiCache/Multi-AZ for sessions or store sessions in DB; centralize logs to CloudWatch/Kinesis.
+## 6. Application Local State
+- **Where:** EC2/VMs in diagram.  
+- **Risk:** Local/temp state not replicated across sites.  
+- **Impact:** Session loss, user disruption during failover.  
+- **Refinement:** Plan shared-state architecture (S3/EFS/ElastiCache) in detailed design.
 
 ---
 
-## 7. Missing Failback Procedure
-**Where:** No documented failback (DR→Primary) steps or preconditions.  
-**How exploited / fail:** Manual, error-prone failback causes data divergence, accidental overwrites, or prolonged downtime.  
-**Resolve:** Create a detailed Failback Runbook: preconditions, sync steps, validation checksums, DNS switch steps, rollback criteria; practice via drills.
+## 7. Failback Not Defined
+- **Where:** Plan covers failover but not return to primary.  
+- **Risk:** Lack of documented failback creates uncertainty.  
+- **Impact:** Extended downtime when primary recovers.  
+- **Refinement:** Add a failback strategy section in detailed design (data sync, DNS return, validation).
 
 ---
 
-## 8. Monitoring & Alerting Gaps
-**Where:** No comprehensive CloudWatch/alerts/incident escalation tied to RTO/RPO metrics.  
-**How exploited / fail:** Failures go unnoticed or un-escalated; lead to missed RTO/RPO and delayed recovery.  
-**Resolve:** Define key metrics (ALB 5xx, unhealthy hosts, DB lag, S3 replication failures), add CloudWatch alarms → SNS → on-call (PagerDuty/Slack), add synthetic health checks, and document escalation matrix.
+## 8. Monitoring & Alerting
+- **Where:** Not shown in high-level diagram.  
+- **Risk:** Failures may not be detected in time.  
+- **Impact:** RTO/RPO breach.  
+- **Refinement:** Include CloudWatch/GuardDuty/SNS in the next design phase.
 
 ---
 
-## 9. Third-Party Dependency Risks
-**Where:** External services (payment, auth, email) have no fallback plan.  
-**How exploited / fail:** Third-party outage or compromise breaks business flows even if infra is up.  
-**Resolve:** Inventory all third-party services, capture SLAs, implement fallbacks (alternate providers or degraded-mode behavior), and include third-party outage scenarios in DR drills.
+## 9. Third-Party Dependencies
+- **Where:** Not mentioned in scope.  
+- **Risk:** External services (auth, payment, email) may fail independently.  
+- **Impact:** DR site is up but business still impacted.  
+- **Refinement:** Inventory and add contingency/fallbacks in final plan.
 
 ---
 
-## 10. Insider Credentials & Supply-Chain Risk
-**Where:** Break-glass credentials, long-lived keys, CI/CD artifact verification gaps.  
-**How exploited / fail:** Compromised credentials or malicious artifacts can delete backups, change routing, or deploy malicious code.  
-**Resolve:** Enforce least-privilege IAM, short-lived credentials, MFA, artifact signing and dependency scanning in CI/CD, maintain immutable audit logs (CloudTrail + S3 Object Lock), and implement an auditable break-glass approval process.
+## 10. Insider & Supply-Chain Risks
+- **Where:** IAM / access / CI-CD not detailed yet.  
+- **Risk:** Keys, privileged access, or pipeline compromises could undermine DR.  
+- **Impact:** Backup deletion or malicious failover.  
+- **Refinement:** Add IAM/MFA, break-glass accounts, CI/CD signing in final plan.
 
 ---
+
+# Key Takeaway
+Before moving to implementation:  
+- Decide **DR modes per workload**.  
+- Add **failback strategy**.  
+- Design for **monitoring, secure access, and immutable backups**.  
+- Document **business processes and third-party contingencies**.
+
+This way the detailed plan will be **audit-ready** and execution can reliably achieve stated RTO/RPO.
