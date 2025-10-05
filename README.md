@@ -13,7 +13,7 @@ This BCP/DR plan leverages AWS services with a **multi-site (Active-Passive)** d
 
 ### 2.1 Data Center (DC) Objectives
 - Maintain high availability of application services across multiple Availability Zones (AZs).
-- Respond ASAP to any compromise detected ab=nd resolve it.
+- Respond ASAP to any compromise detected and resolve it.
 - Use AI/ML resources available to detect and take some automated steps.
 - Invest well in monitoring of the each level so that you can pinpoint which  resorce is compromised.
 - Eliminate single points of failure in compute, networking, and database layers.  
