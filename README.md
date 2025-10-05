@@ -12,14 +12,18 @@ This BCP/DR plan leverages AWS services with a **multi-site (Active-Passive)** d
 ## 2. Objectives
 
 ### 2.1 Data Center (DC) Objectives
-- Maintain high availability of application services across multiple Availability Zones (AZs).  
+- Maintain high availability of application services across multiple Availability Zones (AZs).
+- Respond ASAP to any compromise detected ab=nd resolve it.
+- Use AI/ML resources available to detect and take some automated steps.
+- Invest well in monitoring of the each level so that you can pinpoint which  resorce is compromised.
 - Eliminate single points of failure in compute, networking, and database layers.  
 - Provide secure, redundant storage for critical business and customer data.  
 - Ensure reliable backup and restore mechanisms within the primary data center.  
 - Optimize operational costs while retaining resiliency.  
 
 ### 2.2 Disaster Recovery (DR) Objectives
-- Ensure continuity of services in case of full region outage or catastrophic event.  
+- Ensure continuity of services in case of full region outage or catastrophic event.
+- Automated failover and failback.
 - Provide an alternate site (DR Region) with the ability to take over traffic seamlessly.  
 - Minimize Recovery Time Objective (RTO) and Recovery Point Objective (RPO) for critical workloads.  
 - Replicate backups and databases across regions to ensure data durability.  
@@ -49,7 +53,7 @@ This plan covers:
 6. **DDoS attack** → High traffic surge impacting availability.  
 7. **Hardware/instance failure** → EC2 or VM crashes leading to downtime.  
 
-These risks must be mitigated through **multi-AZ deployment, multi-site replication, automated backups, monitoring, and proactive security measures**.  
+These risks must be mitigated through **multi-AZ deployment, multi-site replication, automated backups, monitoring, Ai/ML and proactive security measures**.  
 
 ---
 
