@@ -163,7 +163,7 @@ This design builds a **self-healing, ransomware-proof AWS infrastructure** that 
 
 ## 🖼️ Architecture Diagram
 
-![Ransomware-Resilient DR Architecture](ransomware_dr_diagram.png)
+![Threat-Resilient DR Architecture](Untitled.png)
 
 ### Diagram Description
 - **Primary Region:** Hosts live workloads and continuous backups.  
