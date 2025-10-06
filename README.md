@@ -1,123 +1,175 @@
-# Business Continuity and Disaster Recovery (BCP/DR) Plan
-
-## 1. Introduction
-This document outlines the Business Continuity and Disaster Recovery (BCP/DR) plan for our company’s production cloud infrastructure.  
-The primary goal is to ensure **service availability, resilience, and data protection** for our business-critical Cloud Management Portal (CMP).  
-The plan addresses **both common recurring failures** (such as instance crashes or network latency) and **catastrophic failures** (such as full regional outages or ransomware).  
-
-This BCP/DR plan leverages AWS services with a **multi-site (Active-Passive)** disaster recovery strategy, supported by automation, monitoring, and cost-optimized resilience.  
+# 🛡️ Cloud Management Portal – Threat-Resilient Disaster Recovery (DC–DR) Plan
 
 ---
 
-## 2. Objectives
+## 📘 Overview
+This document defines the **Disaster Recovery (DC–DR)** and **Business Continuity** strategy for our Cloud Management Portal (CMP).  
+The objective is to ensure **continuous service availability**, **zero-data-loss recovery**, and **strong ransomware protection** across all AWS environments.
 
-### 2.1 Data Center (DC) Objectives
-- Maintain high availability of application services across multiple Availability Zones (AZs).
-- Respond ASAP to any compromise detected and resolve it.
-- Use AI/ML resources available to detect and take some automated steps.
-- Invest well in monitoring of the each level so that you can pinpoint which  resorce is compromised.
-- Eliminate single points of failure in compute, networking, and database layers.  
-- Provide secure, redundant storage for critical business and customer data.  
-- Ensure reliable backup and restore mechanisms within the primary data center.  
-- Optimize operational costs while retaining resiliency.  
-
-### 2.2 Disaster Recovery (DR) Objectives
-- Ensure continuity of services in case of full region outage or catastrophic event.
-- Automated failover and failback.
-- Provide an alternate site (DR Region) with the ability to take over traffic seamlessly.  
-- Minimize Recovery Time Objective (RTO) and Recovery Point Objective (RPO) for critical workloads.  
-- Replicate backups and databases across regions to ensure data durability.  
-- Regularly test failover and recovery procedures to validate effectiveness.  
+This plan builds an **AI-driven, self-healing, multi-region AWS architecture** capable of surviving any failure — from hardware loss to complete region outage or ransomware attacks — while keeping data and operations secure, auditable, and recoverable.
 
 ---
 
-## 3. Scope
-This plan covers:  
-- The **Cloud Management Portal (CMP)** web application and APIs.  
-- Application servers (EC2/VMs) across AWS Availability Zones.  
-- Primary Database (Multi-AZ) and its backups.  
-- Storage (S3, cross-region replication).  
-- DNS and traffic management (Route 53, Load Balancers).  
-- Security, monitoring, and alerting mechanisms.  
+## 🎯 Objectives
+1. **Uninterrupted Business Operations**  
+   Maintain service availability during infrastructure, network, or regional failures.
+2. **Data Integrity and Recovery**  
+   Protect all critical data from corruption, encryption, or deletion.
+3. **Minimal RTO/RPO**  
+   Achieve recovery within minutes (RTO < 5 min) and data loss limited to seconds (RPO ≈ 0).
+4. **Ransomware Resilience**  
+   Ensure encrypted or malicious data never overwrites clean backups.
+5. **Security and Compliance**  
+   Enforce immutable, isolated storage, multi-account protection, and full audit visibility.
+6. **Automation and Intelligence**  
+   Use AI/ML to detect anomalies, prevent replication of infected data, and automate failover.
 
 ---
 
-## 4. Risk Assessment
+## 🧱 1. Architecture Layers
 
-### Common Risks at Production Level
-1. **Availability Zone (AZ) failure** → Can cause downtime for single-AZ workloads.  
-2. **Regional outage** → Natural disaster or AWS service failure affecting an entire region.  
-3. **Database corruption** → Logical or accidental data deletion.  
-4. **Ransomware or malware attack** → Data encryption or loss of access.  
-5. **Network misconfiguration** → Incorrect security group, VPC, or routing changes leading to outages.  
-6. **DDoS attack** → High traffic surge impacting availability.  
-7. **Hardware/instance failure** → EC2 or VM crashes leading to downtime.  
-
-These risks must be mitigated through **multi-AZ deployment, multi-site replication, automated backups, monitoring, Ai/ML and proactive security measures**.  
-
----
-
-## 5. Cloud Architecture for DR & Continuity
-- **Primary Region (DC):** Active site serving production traffic with multi-AZ redundancy.  
-- **Secondary Region (DR):** Passive site ready to take over in case of regional failure.  
-- **Route 53 DNS:** Manages global traffic routing and failover between DC and DR.  
-- **Application Layer:** EC2/VMs deployed across 3 AZs per region, behind a load balancer.  
-- **Database Layer:** Primary DB with synchronous replication (multi-AZ) and cross-region replication for DR.  
-- **Backup Layer:** Automated snapshots and versioned backups in S3, with cross-region replication.  
+| Layer | Purpose | AWS Components |
+|-------|----------|----------------|
+| **Global Access Layer** | Routes users to healthy regions | Route 53, AWS Global Accelerator |
+| **Compute & App Layer** | Runs CMP microservices | EKS / ECS / EC2 (Multi-AZ) |
+| **Data Layer** | Maintains synchronized databases | Aurora Global DB, DynamoDB Global Tables |
+| **Storage Layer** | Holds files, logs, and backups | S3 w/ Versioning + Object Lock, EFS |
+| **Backup & Recovery Layer** | Automates immutable backups | AWS Backup + Vault Lock, Cross-Account Vaults |
+| **Monitoring & AI/ML Layer** | Detects, analyzes, and remediates issues | CloudWatch, Lookout for Metrics, DevOps Guru, SageMaker |
+| **Security & Compliance Layer** | Continuous threat detection & governance | GuardDuty, Security Hub, Config, KMS, CloudTrail |
 
 ---
 
-## 6. Recovery Objectives
-- **Recovery Time Objective (RTO):** ≤ 30 minutes for critical services.  
-- **Recovery Point Objective (RPO):** ≤ 15 minutes for databases, ≤ 1 hour for backups.  
+## 🧩 2. Business Continuity Strategy
+- Multi-Region setup with **Active–Active** or **Active–Passive** deployment.  
+- **Automatic failover** through Route 53 and Global Accelerator.  
+- Each region operates across **multiple Availability Zones** for hardware-level fault tolerance.  
+- Infrastructure defined via **Infrastructure-as-Code** (CloudFormation / CDK) for instant rebuilds.  
+- Continuous **health checks** trigger automatic rerouting when a component fails.
 
 ---
 
-## 7. Disaster Recovery Strategies
-Our chosen strategy is **Multi-Site (Active-Passive)**:  
-- **Primary Site:** Actively serves traffic under normal operations.  
-- **DR Site:** Kept warm and ready to take over in the event of a disaster.  
-- **Traffic Routing:** Route 53 automatically fails over to the DR site if the primary region fails.  
-- **Data Replication:** Database and backups are replicated across regions using Multi-AZ + Cross-Region Replication.  
-- **Validation:** Regular failover drills will be conducted to ensure recovery effectiveness.  
+## 💾 3. Data Recovery & Ransomware Protection
+
+### **3.1 Real-Time Replication**
+- Aurora Global DB and DynamoDB Global Tables replicate live data to DR region.
+- Provides zero-data-loss recovery during hardware or region outage.
+
+### **3.2 Controlled Replication Policies**
+- Add **anomaly-based validation** before copying backups or data:
+  - CloudWatch + Lookout for Metrics analyze activity (write spikes, file changes).
+  - Only “healthy” backups replicate to the DR region.
+  - Suspicious backups are paused until manually reviewed.
+- Optional **delayed replica** (via DMS or snapshot restore) adds extra safety window.
+
+### **3.3 Immutable Backups (AWS Backup Vault Lock)**
+- AWS Backup automates snapshot creation for RDS, Aurora, EBS, EFS, DynamoDB.
+- Backups stored in **Vault Lock-enabled vaults** cannot be deleted or modified, even by admins.
+- Automatic **cross-region + cross-account copies** isolate data from compromised environments.
+
+### **3.4 S3 Object Lock and Versioning**
+- S3 buckets keep every version of every file.
+- Object Lock enforces Write-Once-Read-Many (WORM) retention to stop ransomware deletions.
+- Even if encrypted files replicate, older versions remain intact.
+
+### **3.5 Point-in-Time Recovery**
+- Databases can be restored to any second before the attack using **Aurora PITR** or **AWS Backup snapshots**.
+- Clean clusters replace corrupted ones after verification.
 
 ---
 
-## 8. Security & Compliance
-- **IAM Policies:** Enforce least-privilege access for automation and users.  
-- **Encryption:** Encrypt all data at rest and in transit (KMS, TLS).  
-- **Monitoring:** CloudWatch, GuardDuty, and CloudTrail for threat detection and auditing.  
-- **Network Security:** Security groups, NACLs, and WAF for traffic control and DDoS mitigation.  
-- **Compliance:** Adherence to applicable regulations (e.g., GDPR, ISO 27001).  
+## ⚙️ 4. Failover and Recovery Workflow
+
+```text
+Normal Operation
+     │
+     ├─► Continuous backups + anomaly monitoring
+     │
+     ├─► Ransomware or corruption detected
+     │       ↓
+     │   1. Stop replication immediately
+     │   2. Identify last clean backup
+     │   3. Restore clean DB / files from immutable vault
+     │   4. Validate integrity
+     │   5. Redirect traffic via Route 53 to restored region
+     │
+     └─► Resume normal replication once verified
+```
+## 🔍 5. Monitoring & Anomaly Detection
+
+- **CloudWatch Anomaly Detection:** Monitors latency, write rates, and error spikes.  
+- **Lookout for Metrics:** Detects abnormal transactional or access patterns.  
+- **GuardDuty + Macie:** Identify unusual data access, mass encryption, or deletion.  
+- **DevOps Guru / SageMaker:** Provide AI-driven root-cause insights and failure prediction.  
+- **EventBridge + SSM Automation:** Automatically trigger recovery or human alerts when anomalies appear.
 
 ---
 
-## 9. Testing & Validation
-- **Simulation of Failures:** Test single-instance failures, AZ outages, and full region failover.  
-- **Backup Recovery Tests:** Validate database restore from snapshots and versioned S3 storage.  
-- **DR Drills:** Quarterly failover test to DR region to ensure readiness.  
+## 🔐 6. Security and Governance
+
+- **KMS Multi-Region Keys:** Unified encryption across data, backups, and logs.  
+- **AWS Organizations + Control Tower:** Enforce account-level guardrails and least-privilege access.  
+- **Vault Lock & Cross-Account Backups:** Protect backups from insider or external deletion attempts.  
+- **CloudTrail + Audit Manager:** Provide full traceability for every backup, restore, or failover action.  
+- **IAM Boundaries:** Limit DR account permissions and isolate backup vault operations.  
+- **GuardDuty + Security Hub:** Continuously scan for threats and maintain centralized security posture visibility.
 
 ---
 
+## 🧠 7. AI/ML-Driven Automation
 
-## 10. Cost Optimization
-- Multi-AZ for critical workloads, single-AZ backups for non-critical.  
-- Use S3 lifecycle policies to shift older backups to Glacier.  
-- Keep DR Region in **warm standby mode** to reduce cost.  
-- Use auto-scaling and spot instances for non-critical environments.  
+- **ML Models:** Forecast anomalies in DB writes, network usage, and API call rates.  
+- **Automated Decision Flow:**  
+  1. Detect unusual activity (e.g., rapid encryption or deletions).  
+  2. Pause replication to prevent spreading infected data.  
+  3. Trigger Step Function to launch snapshot + restore from last clean point.  
+  4. Notify engineers and automatically validate the recovery cluster’s health.
+
+This ensures proactive, **self-healing infrastructure** with minimal downtime.
 
 ---
 
-## 11. Estimated Timeframe
-- **Working hours:** 5 hrs/day.  
-- **Deadline:** 1 month (~20 working days).  
+## 🧩 8. Testing and Validation
 
-**Phases:**  
-1. Requirements & Architecture – 3-4 days.  
-2. Terraform & Python Automation – 10-12 days.  
-3. Infra Setup & DR Implementation – 5-6 days.  
-4. Testing & Validation – 3-4 days.  
-5. Documentation & Handover – 2-3 days.
+- **Monthly DR Drills:** Simulate region failure and full data recovery scenarios.  
+- **Quarterly Game Days:** Run fault injection using AWS Fault Injection Simulator (FIS).  
+- **Automated Restore Validation:** Restore random backups and compare hash integrity.  
+- **Audit Reports:** Maintain records in AWS Backup Audit Manager and CloudTrail.
 
-## 12. High level Diagram
-![Diagram](2025_10_03_0ff_Kleki(1).png)
+---
+
+## 📊 9. Expected Outcomes
+
+- Continuous uptime even during major regional or security incidents.  
+- Zero human dependency for recovery operations.  
+- Immutable data protection ensuring clean restore points.  
+- Verified compliance with security and data protection policies.  
+- AI-assisted detection and remediation of future threats.
+
+---
+
+## 🧭 10. Summary
+
+The **CMP Disaster Recovery and Business Continuity Plan** ensures:
+
+- **Zero downtime** for users.  
+- **Zero data loss** even under ransomware or corruption.  
+- **Zero compromise** with immutable, cross-account, cross-region backups.  
+- **Zero manual effort** through automation and AI-based anomaly handling.
+
+This design builds a **self-healing, ransomware-proof AWS infrastructure** that safeguards critical business operations and maintains trust, compliance, and resilience at all times.
+
+---
+
+## 🖼️ Architecture Diagram
+
+![Ransomware-Resilient DR Architecture](ransomware_dr_diagram.png)
+
+### Diagram Description
+- **Primary Region:** Hosts live workloads and continuous backups.  
+- **Anomaly Detection Layer:** AI/ML validation before replication.  
+- **DR Region:** Receives only clean backups and can auto-promote to active if needed.  
+- **Immutable Backup Vault:** Cross-account, locked vault storing clean, untouchable data.  
+- **Failover Path:** Managed by Route 53 + Global Accelerator.  
+- **Recovery Flow:** Restore from clean backup, verify integrity, and resume operations.
+
