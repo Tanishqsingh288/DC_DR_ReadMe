@@ -1,7 +1,7 @@
 # README — Customer Input & Scope (Platinum DR for AWS)
 
 This document is for customers who want to **one-click** deploy a **Disaster Recovery (DR)** setup for their app on AWS.  
-Language is simple; if you’re unsure about anything, see **“What happens if I don’t know?”**.  
+
 This plan targets **near-zero data loss** and **very short downtime** during failures.
 
 ---
