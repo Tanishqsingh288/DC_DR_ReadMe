@@ -1,107 +1,108 @@
 # 🛡️ Platinum DC–DR Plan – AWS Services Overview
 
-This document lists all AWS services that will be provisioned under the **Platinum Disaster Recovery Plan** for the Cloud Management Portal (CMP).
+This document lists all AWS services provisioned under the **Platinum Disaster Recovery (DC–DR) Plan** for the Cloud Management Portal (CMP).
 
-Each service is carefully selected to ensure **zero data loss (RPO ≈ 0)**, **minimal downtime (RTO < 5 min)**, and **ransomware-resilient recovery** through automation and AI-driven anomaly detection.
+Each service is mapped to its **deployment location (Primary, DR, or Global)** and includes the **reason it’s implemented** — ensuring an AI-driven, ransomware-resilient, multi-region AWS architecture.
 
 ---
 
 ## 1. Organization, Security & Governance
-| Area | Service We Will Implement | Why It’s Needed |
-|------|----------------------------|-----------------|
-| Multi-Account Setup | **AWS Organizations + Control Tower** | Establishes a governed multi-account structure with landing zones and guardrails. |
-| Audit & Traceability | **AWS CloudTrail (Org Trail)** | Records every user and API action across all accounts for audit and compliance. |
-| Configuration Compliance | **AWS Config + Conformance Packs** | Detects misconfigurations and enforces compliance baselines (CIS/AWS standards). |
-| Threat Detection | **Amazon GuardDuty** | Continuously monitors for malicious activity or unauthorized access. |
-| Security Posture Management | **AWS Security Hub** | Aggregates security findings and compliance scores across all regions and accounts. |
-| Data Privacy | **Amazon Macie** | Identifies and protects sensitive data stored in S3. |
-| Encryption | **AWS KMS (Multi-Region Keys)** | Encrypts data across regions for EBS, S3, RDS, and backups with unified keys. |
-| Access Management | **AWS IAM (Roles, Boundaries, SCPs)** | Enforces least-privilege, cross-account access, and deletion protections. |
-| Secret Management | **AWS Secrets Manager / SSM Parameter Store** | Stores and rotates credentials and configuration values securely. |
+| Area | Service We Will Implement | Where (Primary / DR / Region / Global) | Why It’s Needed |
+|------|----------------------------|-----------------------------------------|-----------------|
+| Multi-Account Setup | **AWS Organizations + Control Tower** | **Global** | Establishes governed multi-account structure with landing zones and security guardrails. |
+| Audit & Traceability | **AWS CloudTrail (Org Trail)** | **Global (All Regions)** | Captures every API and user action across all accounts for audit and compliance. |
+| Configuration Compliance | **AWS Config + Conformance Packs** | **Primary + DR Regions** | Detects drift and enforces compliance with CIS/AWS Foundational benchmarks. |
+| Threat Detection | **Amazon GuardDuty** | **Primary + DR Regions** | Detects malicious activity and unauthorized access across workloads. |
+| Security Posture | **AWS Security Hub** | **Global (Aggregated)** | Centralized view of security findings and compliance scores. |
+| Data Privacy | **Amazon Macie** | **Primary Region** | Scans S3 for sensitive data (PII, keys, credentials) to prevent data leaks. |
+| Encryption | **AWS KMS (Multi-Region Keys)** | **Primary + DR Regions** | Encrypts all data sources (S3, RDS, EBS, logs, backups) with unified MRKs. |
+| Access Control | **AWS IAM (Roles, Boundaries, SCPs)** | **All Accounts** | Ensures least-privilege access, prevents destructive actions, and isolates DR account. |
+| Secret Management | **AWS Secrets Manager / SSM Parameter Store** | **Primary + DR Regions** | Stores credentials and environment parameters securely for applications and automation. |
 
 ---
 
 ## 2. Networking, Edge & Certificates
-| Area | Service We Will Implement | Why It’s Needed |
-|------|----------------------------|-----------------|
-| Network Foundation | **Amazon VPC (3 AZ Design)** | Creates isolated, fault-tolerant networks for workloads in each region. |
-| Private Access | **VPC Endpoints (S3, STS, ECR, SSM, CW, KMS)** | Ensures private AWS service connectivity without internet exposure. |
-| DNS & Health Checks | **Amazon Route 53** | Provides health-based routing and automatic regional failover. |
-| Global Traffic Control | **AWS Global Accelerator** | Enables sub-second user rerouting between regions via Anycast IPs. |
-| Web Protection | **AWS WAF + Shield Advanced** | Protects web apps and APIs from DDoS and L7 threats. |
-| TLS Certificates | **AWS Certificate Manager (ACM)** | Manages SSL/TLS certificates for ALB and Global Accelerator. |
+| Area | Service We Will Implement | Where (Primary / DR / Region / Global) | Why It’s Needed |
+|------|----------------------------|-----------------------------------------|-----------------|
+| Network Foundation | **Amazon VPC (3 AZ Design)** | **Primary + DR Regions** | Provides isolated, multi-AZ networking for application and data layers. |
+| Private Access | **VPC Endpoints (S3, STS, ECR, SSM, CW, KMS)** | **Primary + DR Regions** | Keeps AWS service traffic internal, improving security and performance. |
+| DNS & Failover | **Amazon Route 53** | **Global** | Provides health-based routing and automatic regional failover between regions. |
+| Global Traffic Control | **AWS Global Accelerator** | **Global** | Offers sub-second failover with static Anycast IPs for seamless user redirection. |
+| Web Protection | **AWS WAF + Shield Advanced** | **Global / ALB Edge** | Protects apps from DDoS and web-layer threats (L3/L7). |
+| SSL/TLS Certificates | **AWS Certificate Manager (ACM)** | **Primary + DR Regions** | Manages SSL/TLS certificates for ALB, API Gateway, and Global Accelerator endpoints. |
 
 ---
 
 ## 3. Compute & Application Layer
-| Area | Service We Will Implement | Why It’s Needed |
-|------|----------------------------|-----------------|
-| Container Orchestration | **Amazon EKS (Primary & DR)** | Runs resilient microservices across multiple AZs with managed Kubernetes. |
-| Container Registry | **Amazon ECR (Replicated)** | Stores application images with automatic cross-region replication. |
-| Application Entry | **Application Load Balancer (ALB)** | Balances traffic and integrates with WAF and Route 53 health checks. |
-| Shared Storage | **Amazon EFS (Optional)** | Provides persistent, shared file storage for application pods. |
+| Area | Service We Will Implement | Where (Primary / DR / Region / Global) | Why It’s Needed |
+|------|----------------------------|-----------------------------------------|-----------------|
+| Container Orchestration | **Amazon EKS** | **Primary + DR Regions (Multi-AZ)** | Runs CMP microservices in a fault-tolerant, auto-scalable Kubernetes environment. |
+| Container Registry | **Amazon ECR (Replicated)** | **Primary → DR Regions** | Ensures application images are available in both regions for failover. |
+| Load Balancing | **Application Load Balancer (ALB)** | **Primary + DR Regions** | Distributes app traffic and integrates with Route 53 and WAF for protection. |
+| Shared Storage | **Amazon EFS (Optional)** | **Primary + DR Regions** | Provides persistent shared storage across EKS nodes and AZs. |
 
 ---
 
 ## 4. Data Layer
-| Area | Service We Will Implement | Why It’s Needed |
-|------|----------------------------|-----------------|
-| Relational Database | **Amazon Aurora Global Database** | Enables near-zero-RPO replication and instant regional promotion. |
-| NoSQL Database | **Amazon DynamoDB Global Tables** | Offers active-active data availability and sub-second replication. |
-| In-Memory Cache | **Amazon ElastiCache (Redis)** | Reduces latency and improves performance for session and cache data. |
+| Area | Service We Will Implement | Where (Primary / DR / Region / Global) | Why It’s Needed |
+|------|----------------------------|-----------------------------------------|-----------------|
+| Relational Database | **Amazon Aurora Global Database** | **Primary (Writer) + DR (Reader)** | Enables near-zero-RPO replication and fast cross-region failover for databases. |
+| NoSQL Database | **Amazon DynamoDB Global Tables** | **Primary + DR Regions** | Offers active-active data access with global replication for low latency. |
+| Caching | **Amazon ElastiCache (Redis)** | **Primary + DR Regions** | Provides low-latency caching and session management, easing DB load. |
 
 ---
 
 ## 5. Object Storage & Replication
-| Area | Service We Will Implement | Why It’s Needed |
-|------|----------------------------|-----------------|
-| Object Storage | **Amazon S3 (Versioning + Object Lock)** | Provides immutable, ransomware-proof data storage with WORM compliance. |
-| Cross-Region Copy | **S3 Cross-Region Replication (CRR)** | Maintains synchronized, isolated data copies in DR region. |
+| Area | Service We Will Implement | Where (Primary / DR / Region / Global) | Why It’s Needed |
+|------|----------------------------|-----------------------------------------|-----------------|
+| Object Storage | **Amazon S3 (Versioning + Object Lock)** | **Primary + DR Regions** | Ensures immutable, ransomware-resistant data retention and recovery. |
+| Data Replication | **S3 Cross-Region Replication (CRR)** | **Primary → DR Regions** | Maintains synchronized, validated data copies for recovery in DR region. |
 
 ---
 
 ## 6. Backup, Immutability & Recovery
-| Area | Service We Will Implement | Why It’s Needed |
-|------|----------------------------|-----------------|
-| Centralized Backups | **AWS Backup** | Automates consistent backup plans for all supported AWS services. |
-| Immutability | **AWS Backup Vault Lock (Compliance Mode)** | Prevents deletion or modification of backups, even by admins. |
-| Cross-Account Copies | **AWS Backup Cross-Region & Cross-Account Copy** | Protects from regional failure or account compromise. |
-| Backup Compliance | **AWS Backup Audit Manager** | Provides evidence of backup integrity and policy compliance. |
+| Area | Service We Will Implement | Where (Primary / DR / Region / Global) | Why It’s Needed |
+|------|----------------------------|-----------------------------------------|-----------------|
+| Centralized Backups | **AWS Backup** | **Primary + DR Regions** | Automates backups across RDS, EBS, EFS, DynamoDB, and EKS. |
+| Immutability | **AWS Backup Vault Lock (Compliance Mode)** | **DR Account / Region** | Prevents deletion or tampering with backup data — even by admins. |
+| Cross-Region Protection | **AWS Backup Cross-Region / Cross-Account Copy** | **Primary → DR** | Protects data from region or account compromise. |
+| Backup Compliance | **AWS Backup Audit Manager** | **Security Account / Global** | Monitors adherence to backup policies and generates compliance evidence. |
 
 ---
 
 ## 7. Monitoring, AI/ML & Automation
-| Area | Service We Will Implement | Why It’s Needed |
-|------|----------------------------|-----------------|
-| Observability | **Amazon CloudWatch (Logs, Metrics, Anomaly Detection)** | Detects spikes, latency, and unusual operations automatically. |
-| AIOps | **Amazon DevOps Guru** | Uses ML to detect and diagnose anomalies in EKS/RDS environments. |
-| Business Anomalies | **Amazon Lookout for Metrics** | Identifies abnormal access or data patterns indicating ransomware. |
-| Workflow Orchestration | **AWS Step Functions** | Automates recovery, failover, and restoration workflows. |
-| Event Routing | **Amazon EventBridge** | Triggers automated responses based on monitoring and anomalies. |
-| Notifications | **Amazon SNS** | Sends incident alerts and recovery notifications. |
-| Systems Management | **AWS Systems Manager (Run Command/Automation)** | Executes repeatable operational tasks securely and at scale. |
-| Resilience Testing | **AWS Fault Injection Simulator (FIS)** | Validates system behavior and RTO/RPO targets through controlled chaos tests. |
-| Synthetic Monitoring | **CloudWatch Synthetics (Optional)** | Continuously tests endpoint health and availability. |
+| Area | Service We Will Implement | Where (Primary / DR / Region / Global) | Why It’s Needed |
+|------|----------------------------|-----------------------------------------|-----------------|
+| Observability | **Amazon CloudWatch (Logs, Metrics, Anomaly Detection)** | **Primary + DR Regions** | Tracks performance and detects abnormal activity automatically. |
+| AIOps Analysis | **Amazon DevOps Guru** | **Primary + DR Regions** | Uses ML to identify operational anomalies and suggest remediations. |
+| Business Anomaly Detection | **Amazon Lookout for Metrics** | **Primary + DR Regions** | Detects unusual database writes or S3 operations (possible ransomware). |
+| Workflow Automation | **AWS Step Functions** | **Primary + DR Regions** | Automates failover, backup, and restoration workflows in sequence. |
+| Event Routing | **Amazon EventBridge** | **Primary + DR Regions** | Connects anomaly events to automation and remediation actions. |
+| Notifications | **Amazon SNS** | **Primary + DR Regions** | Sends alerts and recovery updates to engineering or NOC teams. |
+| Systems Management | **AWS Systems Manager (Automation, Run Command)** | **Primary + DR Regions** | Provides secure, repeatable operations automation across accounts. |
+| Resilience Testing | **AWS Fault Injection Simulator (FIS)** | **Primary + DR Regions** | Simulates failures to validate DR readiness and system resilience. |
+| Synthetic Monitoring | **CloudWatch Synthetics (Optional)** | **Global** | Continuously validates application endpoint uptime and performance. |
 
 ---
 
 ## 8. Cost & Governance
-| Area | Service We Will Implement | Why It’s Needed |
-|------|----------------------------|-----------------|
-| Budget Control | **AWS Budgets** | Sets cost thresholds and sends alerts to avoid overruns. |
-| Cost Transparency | **AWS Cost & Usage Report (CUR) + Athena/QuickSight** | Provides detailed cost analytics for DR and replication workloads. |
+| Area | Service We Will Implement | Where (Primary / DR / Region / Global) | Why It’s Needed |
+|------|----------------------------|-----------------------------------------|-----------------|
+| Budget Management | **AWS Budgets** | **Global / Per Account** | Sets and monitors monthly cost limits to avoid overruns. |
+| Cost Visibility | **AWS Cost & Usage Report (CUR) + Athena / QuickSight** | **Logging / Shared Services Account** | Enables cost analysis and transparency for DR and data transfer costs. |
 
 ---
 
 ### ✅ Summary
+This Platinum DC–DR configuration ensures:
 
-This service stack ensures:
-- **Continuous uptime** during failures or attacks  
-- **Zero data loss** with immutable backups and multi-region replication  
-- **AI-driven anomaly detection** to prevent ransomware spread  
-- **Full compliance and auditability** with minimal manual intervention  
+- **Continuous uptime** during infrastructure, network, or regional failures  
+- **Zero data loss** through global database replication and immutable backups  
+- **Ransomware resilience** via Object Lock and Vault Lock immutability  
+- **AI-driven anomaly detection** to stop replication of infected data  
+- **Compliance readiness** with automated audits, encryption, and logging  
 
 ---
 
 **Last Updated:** 2025-10-08  
-**Prepared for:** Enterprise Platinum DC–DR Implementation
+**Prepared by:** Cloud Management Portal – Platinum DC–DR Architecture Team
